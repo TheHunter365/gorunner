@@ -68,7 +68,7 @@ func (r *Runner) StartRunner() (out string) {
 	case res := <-c1:
 		out = res
 	case <-time.After(r.TimeOut * time.Second):
-		out = "Runner time out error"
+		out = "Runner timed out"
 		return
 	}
 	r.Return = out
@@ -83,10 +83,7 @@ func (r *Runner) execCode() (stdout string) {
 	}
 
 	utils.FileWrite("tmp.go", r.CodeLines)
-
-	cmd := exec.Command("go", "run", "tmp.go")
-	err := cmd.Start()
-	handleErr(err)
+	cmd := exec.Command("go", "run", "../tmp.go")
 	out, err := cmd.CombinedOutput()
 	handleErr(err)
 	utils.FileDelete("tmp.go")
