@@ -42,6 +42,7 @@ func NewRunner(lang Lang, jsonCode string) *Runner {
 	return &Runner{
 		RawCode: jsonCode,
 		Lang:    lang,
+		TimeOut: 5,
 	}
 }
 
@@ -77,7 +78,6 @@ func (r *Runner) StartRunner() (out string) {
 //ExecCode func
 func (r *Runner) execCode() (stdout string) {
 
-	defer utils.FileDelete("tmp.go")
 	if len(r.CodeLines) == 0 {
 		r.ParseCode()
 	}
@@ -85,8 +85,11 @@ func (r *Runner) execCode() (stdout string) {
 	utils.FileWrite("tmp.go", r.CodeLines)
 
 	cmd := exec.Command("go", "run", "tmp.go")
+	err := cmd.Start()
+	handleErr(err)
 	out, err := cmd.CombinedOutput()
 	handleErr(err)
+	utils.FileDelete("tmp.go")
 	stdout = string(out)
 	return
 }
