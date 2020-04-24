@@ -69,6 +69,7 @@ func (r *Runner) StartRunner() (out string) {
 		out = res
 	case <-time.After(r.TimeOut * time.Second):
 		out = "Runner timed out"
+
 		return
 	}
 	r.Return = out
@@ -88,6 +89,11 @@ func (r *Runner) execCode() (stdout string) {
 	handleErr(err)
 	utils.FileDelete("tmp.go")
 	stdout = string(out)
+	if stdout == "Runner timed out" {
+		if err = cmd.Process.Kill(); err != nil {
+			log.Fatalln(err)
+		}
+	}
 	return
 }
 
