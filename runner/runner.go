@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os/exec"
+	"syscall"
 	"time"
 
 	"github.com/thehunter365/gorunner/utils"
@@ -73,7 +74,7 @@ func (r *Runner) execCode() (stdout string) {
 
 	utils.FileWrite("tmp.go", r.CodeLines)
 	cmd := exec.Command("go", "run", "../tmp.go")
-
+	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	go func() {
 		out, err := cmd.CombinedOutput()
 		c1 <- out
@@ -83,9 +84,7 @@ func (r *Runner) execCode() (stdout string) {
 	}()
 	select {
 	case <-time.After(r.TimeOut * time.Second):
-		if err := cmd.Process.Kill(); err != nil {
-			log.Fatal("failed to kill process: ", err)
-		}
+		syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 		log.Println("process timed out")
 	case o := <-c1:
 		stdout = string(o)
