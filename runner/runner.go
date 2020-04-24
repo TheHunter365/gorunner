@@ -58,26 +58,14 @@ func (r *Runner) ParseCode() (code []string) {
 
 //StartRunner func
 func (r *Runner) StartRunner() (out string) {
-	c1 := make(chan string, 1)
-
-	go func() {
-		t := r.execCode()
-		c1 <- t
-	}()
-	select {
-	case res := <-c1:
-		out = res
-	case <-time.After(r.TimeOut * time.Second):
-		out = "Runner timed out"
-
-		return
-	}
+	out = r.execCode()
 	r.Return = out
 	return
 }
 
 //ExecCode func
 func (r *Runner) execCode() (stdout string) {
+	c1 := make(chan []byte, 1)
 
 	if len(r.CodeLines) == 0 {
 		r.ParseCode()
@@ -85,15 +73,25 @@ func (r *Runner) execCode() (stdout string) {
 
 	utils.FileWrite("tmp.go", r.CodeLines)
 	cmd := exec.Command("go", "run", "../tmp.go")
-	out, err := cmd.CombinedOutput()
-	handleErr(err)
-	utils.FileDelete("tmp.go")
-	stdout = string(out)
-	if stdout == "Runner timed out" {
-		if err = cmd.Process.Kill(); err != nil {
+
+	go func() {
+		out, err := cmd.CombinedOutput()
+		c1 <- out
+		if err != nil {
 			log.Fatalln(err)
 		}
+	}()
+	select {
+	case <-time.After(r.TimeOut * time.Second):
+		if err := cmd.Process.Kill(); err != nil {
+			log.Fatal("failed to kill process: ", err)
+		}
+		log.Println("process timed out")
+	case o := <-c1:
+		stdout = string(o)
+		log.Print("process finished successfully")
 	}
+	utils.FileDelete("tmp.go")
 	return
 }
 
