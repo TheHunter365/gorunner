@@ -38,6 +38,11 @@ type Runner struct {
 	TimeOut time.Duration
 }
 
+//Response struct
+type Response struct {
+	Messages []string
+}
+
 //NewRunner func
 func NewRunner(lang Lang, jsonCode string) *Runner {
 	return &Runner{
@@ -96,6 +101,6 @@ func (r *Runner) execCode() (stdout string) {
 
 func handleErr(err error) {
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 	}
 }

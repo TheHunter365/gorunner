@@ -47,14 +47,17 @@ func (s *Server) Start() {
 
 func handleGoRunner(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
-	var runner Runner
-
-	err := json.NewDecoder(r.Body).Decode(&runner)
-	if err != nil {
-		log.Println(err)
-		w.Write([]byte("Malformed body exception"))
+	log.Println("Handling client !!")
+	var run Runner
+	_ = json.NewDecoder(r.Body).Decode(&run)
+	if len(run.CodeLines) != 0 {
+		run.ParseCode()
+		log.Println(run.CodeLines)
+		out := run.StartRunner()
+		res := Response{[]string{out}}
+		json.NewEncoder(w).Encode(res)
+	} else {
+		res := Response{[]string{"Unable to read request body"}}
+		json.NewEncoder(w).Encode(res)
 	}
-	runner.ParseCode()
-	out := runner.StartRunner()
-	w.Write([]byte(out))
 }
