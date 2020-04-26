@@ -1,6 +1,7 @@
 package runner
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 
@@ -12,7 +13,7 @@ type Server struct {
 	Port   string
 	Router *mux.Router
 
-	Handlers []HandlerFunc
+	Handlers map[string]HandlerFunc
 }
 
 //HandlerFunc type
@@ -24,17 +25,36 @@ func NewServer(port string) *Server {
 	return &Server{
 		Port:     port,
 		Router:   r,
-		Handlers: make([]HandlerFunc, 128),
+		Handlers: make(map[string]HandlerFunc, 128),
 	}
 }
 
 //AddHandlerFunc function
-func (s *Server) AddHandlerFunc(handler HandlerFunc) {
-	s.Handlers = append(s.Handlers, handler)
+func (s *Server) AddHandlerFunc(route string, handler HandlerFunc) {
+	s.Handlers[route] = handler
 }
 
 //Start func
 func (s *Server) Start() {
+	s.AddHandlerFunc("/go", handleGoRunner)
+
+	for r, h := range s.Handlers {
+		s.Router.HandleFunc(r, h)
+	}
 
 	log.Fatal(http.ListenAndServe(s.Port, s.Router))
+}
+
+func handleGoRunner(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("content-type", "application/json")
+	var runner Runner
+
+	err := json.NewDecoder(r.Body).Decode(&runner)
+	if err != nil {
+		log.Println(err)
+		w.Write([]byte("Malformed body exception"))
+	}
+	runner.ParseCode()
+	out := runner.StartRunner()
+	w.Write([]byte(out))
 }
