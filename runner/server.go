@@ -36,6 +36,7 @@ func (s *Server) AddHandlerFunc(route string, handler HandlerFunc) {
 
 //Start func
 func (s *Server) Start() {
+	s.AddHandlerFunc("/", rootHandler)
 	s.AddHandlerFunc("/go", handleGoRunner)
 
 	for r, h := range s.Handlers {
@@ -45,19 +46,26 @@ func (s *Server) Start() {
 	log.Fatal(http.ListenAndServe(s.Port, s.Router))
 }
 
+func rootHandler(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte("Hello from GoRunner !"))
+}
+
 func handleGoRunner(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	log.Println("Handling client !!")
-	var run Runner
-	_ = json.NewDecoder(r.Body).Decode(&run)
-	if len(run.CodeLines) != 0 {
+	var code RawCode
+	_ = json.NewDecoder(r.Body).Decode(&code)
+	if len(code.CodeLines) != 0 {
+		log.Println("starting the runner")
+		run := NewRunner(GO, code)
 		run.ParseCode()
 		log.Println(run.CodeLines)
 		out := run.StartRunner()
-		res := Response{[]string{out}}
+		res := out
 		json.NewEncoder(w).Encode(res)
 	} else {
 		res := Response{[]string{"Unable to read request body"}}
+		log.Println(code)
 		json.NewEncoder(w).Encode(res)
 	}
 }

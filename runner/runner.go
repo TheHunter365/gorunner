@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"os/exec"
+	"strings"
 	"syscall"
 	"time"
 
@@ -33,7 +34,7 @@ type Runner struct {
 
 	Lang      Lang
 	CodeLines []string
-	Return    string
+	Return    Response
 
 	TimeOut time.Duration
 }
@@ -44,9 +45,9 @@ type Response struct {
 }
 
 //NewRunner func
-func NewRunner(lang Lang, jsonCode string) *Runner {
+func NewRunner(lang Lang, jsonCode RawCode) *Runner {
 	return &Runner{
-		RawCode: jsonCode,
+		CodeLines: jsonCode.CodeLines,
 		Lang:    lang,
 		TimeOut: 5,
 	}
@@ -55,6 +56,9 @@ func NewRunner(lang Lang, jsonCode string) *Runner {
 //ParseCode from json to plain old text
 func (r *Runner) ParseCode() (code []string) {
 	var rc RawCode
+	if r.RawCode == "" {
+		return
+	}
 	err := json.Unmarshal([]byte(r.RawCode), &rc)
 	handleErr(err)
 	code = rc.CodeLines
@@ -63,14 +67,14 @@ func (r *Runner) ParseCode() (code []string) {
 }
 
 //StartRunner func
-func (r *Runner) StartRunner() (out string) {
+func (r *Runner) StartRunner() (out []string) {
 	out = r.execCode()
-	r.Return = out
+	r.Return = Response{out}
 	return
 }
 
 //ExecCode func
-func (r *Runner) execCode() (stdout string) {
+func (r *Runner) execCode() (stdout []string) {
 	c1 := make(chan []byte, 1)
 
 	if len(r.CodeLines) == 0 {
@@ -92,7 +96,7 @@ func (r *Runner) execCode() (stdout string) {
 		syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
 		log.Println("process timed out")
 	case o := <-c1:
-		stdout = string(o)
+		stdout = strings.Split(string(o), "\n")
 		log.Print("process finished successfully")
 	}
 	utils.FileDelete("tmp.go")
