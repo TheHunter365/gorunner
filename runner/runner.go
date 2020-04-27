@@ -48,8 +48,8 @@ type Response struct {
 func NewRunner(lang Lang, jsonCode RawCode) *Runner {
 	return &Runner{
 		CodeLines: jsonCode.CodeLines,
-		Lang:    lang,
-		TimeOut: 5,
+		Lang:      lang,
+		TimeOut:   5,
 	}
 }
 
@@ -75,6 +75,7 @@ func (r *Runner) StartRunner() (out []string) {
 
 //ExecCode func
 func (r *Runner) execCode() (stdout []string) {
+	defer utils.TimeTrack(time.Now(), "Code execution")
 	c1 := make(chan []byte, 1)
 
 	if len(r.CodeLines) == 0 {
@@ -86,9 +87,11 @@ func (r *Runner) execCode() (stdout []string) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	go func() {
 		out, err := cmd.CombinedOutput()
-		c1 <- out
 		if err != nil {
-			log.Fatalln(err)
+			log.Println(err)
+			c1 <- []byte(err.Error())
+		} else {
+			c1 <- out
 		}
 	}()
 	select {

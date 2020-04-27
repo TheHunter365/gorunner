@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/thehunter365/gorunner/utils"
 )
 
 //Server type
@@ -51,6 +53,7 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleGoRunner(w http.ResponseWriter, r *http.Request) {
+	defer utils.TimeTrack(time.Now(), "Http Handler")
 	w.Header().Set("content-type", "application/json")
 	log.Println("Handling client !!")
 	var code RawCode
