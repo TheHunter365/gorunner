@@ -73,6 +73,12 @@ func (r *Runner) StartRunner() (out []string) {
 	return
 }
 
+func execCommand(command string, args string) (stdout []string) {
+	defer utils.TimeTrack(time.Now(), "Command execution ")
+
+	return
+}
+
 //ExecCode func
 func (r *Runner) execCode() (stdout []string) {
 	defer utils.TimeTrack(time.Now(), "Code execution")
