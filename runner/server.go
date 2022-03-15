@@ -5,15 +5,13 @@ import (
 	"log"
 	"net/http"
 	"time"
-
-	"github.com/gorilla/mux"
 	"github.com/thehunter365/gorunner/utils"
 )
 
 //Server type
 type Server struct {
 	Port   string
-	Router *mux.Router
+	Router *http.ServeMux
 
 	Handlers map[string]HandlerFunc
 }
@@ -23,7 +21,7 @@ type HandlerFunc func(w http.ResponseWriter, r *http.Request)
 
 //NewServer function
 func NewServer(port string) *Server {
-	r := mux.NewRouter()
+	r :=  http.NewServeMux()
 	return &Server{
 		Port:     port,
 		Router:   r,
